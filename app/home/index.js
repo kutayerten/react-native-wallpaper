@@ -9,6 +9,7 @@ import { apiCall } from '../../api';
 import ImageGrid from '../../components/imageGrid';
 import {debounce} from 'lodash';
 
+let page = 1;
 
 const HomeScreen = () => {
     const {top} = useSafeAreaInsets();
@@ -22,7 +23,8 @@ const HomeScreen = () => {
         fetchImages();
     },[]);
 
-    const fetchImages = async (params ={page:1}, append=true) => {
+    const fetchImages = async (params ={page:1}, append=false) => {
+        console.log('params', params, append);
         let res = await apiCall(params);
         if(res.success && res?.data?.hits){
             if(append)
@@ -37,7 +39,27 @@ const HomeScreen = () => {
     }
 
     const handleSearch = (text) =>{
-        console.log('searching for:', text);
+        setSearch(text);
+        if(text.length>2){
+            //search for this text
+            page =1;
+            setImages([]);
+            fetchImages({page, q:text});
+        }
+
+        if(text==""){
+            //reset results
+            page =1;
+            searchInputRef?.current?.clear();
+            setImages([]);
+            fetchImages({page});
+        }
+    }
+
+    const clearSearch = ()=>{
+        setSearch("");
+        searchInputRef?.current?.clear();
+        
     }
 
     const handleTextDebounce = useCallback(debounce(handleSearch, 400), []);
@@ -70,7 +92,7 @@ const HomeScreen = () => {
                 style={styles.searchInput} />
             {
                 search && (
-                    <Pressable style={styles.closeIcon}>
+                    <Pressable onPress={() => handleSearch("")} style={styles.closeIcon}>
                         <Ionicons name="close" size={24} color={theme.colors.neutral(0.6)} />
                     </Pressable>
                 )
