@@ -8,6 +8,7 @@ import Categories from '../../components/categories';
 import { apiCall } from '../../api';
 import ImageGrid from '../../components/imageGrid';
 import {debounce} from 'lodash';
+import FilterModals from '../../components/filterModals';
 
 let page = 1;
 
@@ -18,6 +19,7 @@ const HomeScreen = () => {
     const [images, setImages] = useState([]);
     const [activeCategory, setActiveCategory] = useState(null);
     const searchInputRef = useRef(null);
+    const modalRef = useRef(null);
   
     useEffect( () =>{
         fetchImages();
@@ -32,6 +34,13 @@ const HomeScreen = () => {
             else
             setImages([...res.data.hits])
         }
+    }
+
+    const openFilterModals = () =>{
+        modalRef?.current?.present();
+    }
+    const closeFilterModals = () =>{
+        modalRef?.current?.close();
     }
 
     const handleChangeCategory = (cat) => {
@@ -80,10 +89,10 @@ const HomeScreen = () => {
       <View style={styles.header}>
         <Pressable>
             <Text style={styles.title}>
-                Matrix
+                Erten
             </Text>
         </Pressable>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={openFilterModals}>
             <FontAwesome6 name='bars-staggered' size={32} color={theme.colors.neutral(0.7)} />
         </TouchableOpacity>
       </View>
@@ -119,7 +128,10 @@ const HomeScreen = () => {
                 }
             </View>
       </ScrollView>
+       {/* Filters Modal */}
+     <FilterModals modalRef={modalRef} />
      </View>
+    
   )
 }
 
