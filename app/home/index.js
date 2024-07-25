@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Feather, FontAwesome6, Ionicons } from '@expo/vector-icons';
@@ -17,6 +17,7 @@ const HomeScreen = () => {
     const paddingTop = top > 0? top+10: 30;
     const [search,setSearch] = useState('');
     const [images, setImages] = useState([]);
+    const [filters,setFilters] = useState(null);
     const [activeCategory, setActiveCategory] = useState(null);
     const searchInputRef = useRef(null);
     const modalRef = useRef(null);
@@ -41,6 +42,42 @@ const HomeScreen = () => {
     }
     const closeFilterModals = () =>{
         modalRef?.current?.close();
+    }
+
+    const applyFilters = () => {
+        if(filters){
+            page= 1;
+            setImages([]);
+            let params = {
+                page,
+                ...filters
+            }
+            if(activeCategory) params.category = activeCategory;
+            if(search) params.q = search;
+            fetchImages(params,false);
+        }
+        closeFilterModals();
+    }
+
+    const resetFilters = () => {
+        console.log('resetting filters');
+        setFilters(null);
+        closeFilterModals();
+    }
+
+    const clearThisFilter = (filterName) =>{
+        let filterz = {...filters};
+        delete filterz[filterName];
+        setFilters({...filterz});
+        page = 1;
+        setImages([]);
+        let params = {
+            page,
+            ...filterz
+        }
+        if(activeCategory) params.category = activeCategory;
+        if(search) params.q = search;
+        fetchImages(params,false);
     }
 
     const handleChangeCategory = (cat) => {
@@ -83,6 +120,8 @@ const HomeScreen = () => {
 
     const handleTextDebounce = useCallback(debounce(handleSearch, 400), []);
 
+    //console.log('filters', filters);
+
     return (
     <View style={[styles.container, {paddingTop}]}>
       {/* HEADER */}
@@ -121,15 +160,62 @@ const HomeScreen = () => {
         <View style={styles.categories}>
             <Categories activeCategory={activeCategory} handleChangeCategory={handleChangeCategory} />
         </View> 
+
+            {/* Filters */}
+            {
+                filters && (
+                    <View>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filters}>
+                            {
+                                Object.keys(filters).map((key,index)=>{
+                                    return(
+                                        <View key={key} style={styles.filterItem}>
+                                            {
+                                                key =='colors'?(
+                                                    <View style={{
+                                                        height : 20,
+                                                        width: 30,
+                                                        borderRadius:7,
+                                                        backgroundColor:filters[key] }} />
+                                                ) : (
+                                                    <Text style={styles.filterItemText}>{filters[key]}</Text>
+                                                )
+                                            }
+                                            <Text style={styles.filterItemText}>{filters[key]}</Text>
+
+                                            <Pressable style={styles.filterCloseIcon} onPress={()=> clearThisFilter(key)}>
+                                            <Ionicons name="close" size={24} color={theme.colors.neutral(0.9)} />
+                                            </Pressable>
+                                        </View>
+                                    )
+                                })
+                            }
+                        </ScrollView>
+                    </View>
+                )
+            }
+
         {/* images masanory grid */}
             <View>
                 {
                     images.length>0 && <ImageGrid images={images} />
                 }
             </View>
+
+            {/*Loading */}
+            <View style={{marginBottom:70, marginTop:images.length > 0? 10 : 70}}>
+                <ActivityIndicator size='large' />
+            </View>
       </ScrollView>
        {/* Filters Modal */}
-     <FilterModals modalRef={modalRef} />
+     <FilterModals 
+        modalRef={modalRef}
+        filters={filters}
+        setFilters={setFilters}
+        onClose={closeFilterModals}
+        onApply={applyFilters}
+        onReset={resetFilters}
+     />
      </View>
     
   )
@@ -178,5 +264,27 @@ const styles = StyleSheet.create({
         backgroundColor:theme.colors.neutral(0.1),
         padding:8,
         borderRadius:theme.radius.sm,
+    },
+    filters:{
+        paddingHorizontal:wp(4),
+        gap:10,
+    },
+    filterItem:{
+        backgroundColor: theme.colors.grayBG,
+        padding:3,
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderRadius: theme.radius.xs,
+        padding:8,
+        gap:10,
+        paddingHorizontal: 10,
+    },
+    filterItemText:{
+        fontSize: hp(1.9),
+    },
+    filterCloseIcon:{
+        backgroundColor:theme.colors.neutral(0.2),
+        padding:4,
+        borderRadius:7, 
     }
 })
